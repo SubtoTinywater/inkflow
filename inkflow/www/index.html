@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>InkFlow Studio</title>
+<style>
+:root{--bg:#1d2029;--panel:#262a36;--panel2:#2f3442;--line:#3a4050;--text:#e8eaf2;--dim:#9aa1b5;--accent:#8c9bff;--accent2:#ffb36b;--stage:#14161d}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:13px/1.4 "Avenir Next","Segoe UI",system-ui,sans-serif;touch-action:none;user-select:none}
+body{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:56px 1fr 236px;grid-template-areas:"top top top" "tools stage side" "time time time";padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button,select,input{font:inherit;color:inherit}select,input[type=number]{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer}
+button:hover{border-color:var(--accent)}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.on{background:var(--accent);color:#12142a;border-color:var(--accent);font-weight:600}
+#top{grid-area:top;display:flex;gap:10px;align-items:center;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;row-gap:6px}
+#top label{display:flex;gap:6px;align-items:center;color:var(--dim)}
+#top input[type=range]{width:84px;accent-color:var(--accent)}
+#top input[type=color]{width:34px;height:28px;border:0;padding:0;background:none}
+.brand{font-weight:700;letter-spacing:.2px;margin-right:4px}
+#tools{grid-area:tools;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px;padding:8px;overflow-y:auto}
+#tools button{width:40px;height:40px;padding:0;font-size:11px}
+#stage{grid-area:stage;position:relative;background:var(--stage);min-width:0;min-height:0}
+#view{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#side{grid-area:side;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+#side h3{font-size:12px;color:var(--dim);font-weight:600;padding:10px 10px 4px}
+#layers{flex:1;overflow-y:auto;padding:0 6px;display:flex;flex-direction:column-reverse;justify-content:flex-end}
+.layer{display:flex;gap:6px;align-items:center;padding:6px;border-radius:6px;border:1px solid transparent;cursor:pointer}
+.layer.sel{background:var(--panel2);border-color:var(--accent)}
+.layer span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.layer button{padding:0 6px;height:22px}
+.row{display:flex;gap:4px;padding:6px 8px;flex-wrap:wrap;align-items:center}
+.row label{display:flex;gap:6px;align-items:center;color:var(--dim);flex:1}
+.row input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+#sw{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;padding:6px 10px}
+#sw i{aspect-ratio:1;border-radius:4px;border:1px solid var(--line);cursor:pointer}
+#time{grid-area:time;background:var(--panel);border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;padding:6px 10px}
+#frames{display:flex;gap:4px;overflow-x:auto;flex:1;padding:2px}
+#frames button{min-width:34px}
+#link{display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--dim)}
+#link i{width:9px;height:9px;border-radius:50%;background:#6b7080}#link.up i{background:#6fe3a0}
+@media (max-width:760px){body{grid-template-columns:50px 1fr;grid-template-rows:auto 1fr 150px auto;grid-template-areas:"top top" "tools stage" "side side" "time time"}#side{border-left:0;border-top:1px solid var(--line)}}
+@media (prefers-reduced-motion:no-preference){button{transition:border-color .12s}}
+</style>
+</head>
+<body>
+<div id="top">
+  <span class="brand">InkFlow</span>
+  <label>Size <input id="size" type="range" min="1" max="120" value="8"><b id="sizeV">8</b></label>
+  <label>Opacity <input id="op" type="range" min="5" max="100" value="100"></label>
+  <label>Stabilizer <input id="stab" type="range" min="0" max="90" value="40"></label>
+  <input id="color" type="color" value="#1b1b1f" aria-label="Color">
+  <button id="sym" title="Mirror strokes across the vertical center">Mirror</button>
+  <button id="shapeFill" title="Fill rectangles and ellipses">Solid shapes</button>
+  <button id="undo">Undo</button><button id="redo">Redo</button>
+  <button id="zin">+</button><button id="zout">−</button><button id="fit">Fit</button>
+  <button id="newdoc">New</button><button id="save">Save</button><button id="load">Open</button>
+  <button id="png">Export PNG</button><button id="webm">Export video</button>
+  <span id="link" title="Connect an AI assistant over MCP"><i></i><span>AI link</span></span>
+</div>
+<div id="tools"></div>
+<div id="stage"><canvas id="view"></canvas></div>
+<div id="side">
+  <h3>Color</h3><div id="sw"></div>
+  <h3>Layers</h3>
+  <div class="row"><label>Opacity <input id="lop" type="range" min="0" max="100" value="100"></label>
+    <select id="lblend"><option value="source-over">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option><option value="overlay">Overlay</option><option value="color-dodge">Dodge</option></select></div>
+  <div class="row"><button id="ladd">Add</button><button id="ldup">Copy</button><button id="lup">Up</button><button id="ldn">Down</button><button id="ldel">Delete</button></div>
+  <div id="layers"></div>
+</div>
+<div id="time">
+  <button id="play">Play</button>
+  <div id="frames"></div>
+  <button id="fadd" title="New blank frame">+ Frame</button><button id="fdup" title="Duplicate frame">Copy frame</button><button id="fdel">Delete frame</button>
+  <label><input id="onion" type="checkbox" checked> Onion skin</label>
+  <label>FPS <input id="fps" type="number" min="1" max="60" value="12" style="width:54px"></label>
+</div>
+<input id="file" type="file" accept=".inkflow,.json" hidden>
+<script src="app.js"></script>
+</body>
+</html>
