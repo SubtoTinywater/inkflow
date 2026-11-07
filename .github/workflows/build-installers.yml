@@ -19,8 +19,24 @@ jobs:
       - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - run: npm install
-      - name: Build .dmg (Intel x64 and Apple Silicon arm64, separate files)
-        run: npx electron-builder --mac dmg --x64 --arm64 -c.mac.artifactName='InkFlow-Studio-${version}-mac-${arch}.${ext}' --publish never
+      - name: Generate build config with per-arch file names
+        shell: bash
+        run: |
+          cat > make-config.cjs <<'JS'
+          const fs = require('fs');
+          const b = require('./package.json').build;
+          b.mac.artifactName = 'InkFlow-Studio-${version}-mac-${arch}.${ext}';
+          b.nsis.artifactName = 'InkFlow-Studio-Setup-${version}-win-${arch}.${ext}';
+          fs.writeFileSync('ci-builder.json', JSON.stringify(b, null, 2));
+          JS
+          node make-config.cjs
+      - name: Build .dmg for Intel (x64)
+        shell: bash
+        run: npx electron-builder --config ci-builder.json --mac dmg --x64 --publish never
+        env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+      - name: Build .dmg for Apple Silicon (arm64)
+        shell: bash
+        run: npx electron-builder --config ci-builder.json --mac dmg --arm64 --publish never
         env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
       - uses: actions/upload-artifact@v4
         with: { name: installer-mac, path: inkflow/dist/*.dmg }
@@ -35,8 +51,23 @@ jobs:
       - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - run: npm install
-      - name: Build .exe installer
-        run: npx electron-builder --win nsis --x64 --arm64 -c.nsis.buildUniversalInstaller=false -c.nsis.artifactName='InkFlow-Studio-Setup-${version}-win-${arch}.${ext}' --publish never
+      - name: Generate build config with per-arch file names
+        shell: bash
+        run: |
+          cat > make-config.cjs <<'JS'
+          const fs = require('fs');
+          const b = require('./package.json').build;
+          b.mac.artifactName = 'InkFlow-Studio-${version}-mac-${arch}.${ext}';
+          b.nsis.artifactName = 'InkFlow-Studio-Setup-${version}-win-${arch}.${ext}';
+          fs.writeFileSync('ci-builder.json', JSON.stringify(b, null, 2));
+          JS
+          node make-config.cjs
+      - name: Build .exe for x64 (Intel/AMD)
+        shell: bash
+        run: npx electron-builder --config ci-builder.json --win nsis --x64 --publish never
+      - name: Build .exe for arm64
+        shell: bash
+        run: npx electron-builder --config ci-builder.json --win nsis --arm64 --publish never
       - uses: actions/upload-artifact@v4
         with: { name: installer-windows, path: inkflow/dist/*.exe }
 
